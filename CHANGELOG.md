@@ -37,6 +37,7 @@ Attention: The newest changes should be on top -->
 - DOC: Add Flight class usage documentation and update index [#841](https://github.com/RocketPy-Team/RocketPy/pull/841)
 - ENH: Discretized and No-Pickle Encoding Options [#827] (https://github.com/RocketPy-Team/RocketPy/pull/827)
 - ENH: Add the Coriolis Force to the Flight class [#799](https://github.com/RocketPy-Team/RocketPy/pull/799)
+- ENH: Improve parachute geometric parametrization [#835](https://github.com/RocketPy-Team/RocketPy/pull/835)
 
 ### Changed
 

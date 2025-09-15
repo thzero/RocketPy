@@ -761,7 +761,24 @@ class Flight:
                         callbacks = [
                             lambda self, parachute_cd_s=parachute.cd_s: setattr(
                                 self, "parachute_cd_s", parachute_cd_s
-                            )
+                            ),
+                            lambda self,
+                            parachute_radius=parachute.parachute_radius: setattr(
+                                self, "parachute_radius", parachute_radius
+                            ),
+                            lambda self,
+                            parachute_height=parachute.parachute_height: setattr(
+                                self, "parachute_height", parachute_height
+                            ),
+                            lambda self, parachute_porosity=parachute.porosity: setattr(
+                                self, "parachute_porosity", parachute_porosity
+                            ),
+                            lambda self,
+                            added_mass_coefficient=parachute.added_mass_coefficient: setattr(
+                                self,
+                                "parachute_added_mass_coefficient",
+                                added_mass_coefficient,
+                            ),
                         ]
                         self.flight_phases.add_phase(
                             node.t + parachute.lag,
@@ -1007,7 +1024,31 @@ class Flight:
                                             lambda self,
                                             parachute_cd_s=parachute.cd_s: setattr(
                                                 self, "parachute_cd_s", parachute_cd_s
-                                            )
+                                            ),
+                                            lambda self,
+                                            parachute_radius=parachute.radius: setattr(
+                                                self,
+                                                "parachute_radius",
+                                                parachute_radius,
+                                            ),
+                                            lambda self,
+                                            parachute_height=parachute.height: setattr(
+                                                self,
+                                                "parachute_height",
+                                                parachute_height,
+                                            ),
+                                            lambda self,
+                                            parachute_porosity=parachute.porosity: setattr(
+                                                self,
+                                                "parachute_porosity",
+                                                parachute_porosity,
+                                            ),
+                                            lambda self,
+                                            added_mass_coefficient=parachute.added_mass_coefficient: setattr(
+                                                self,
+                                                "parachute_added_mass_coefficient",
+                                                added_mass_coefficient,
+                                            ),
                                         ]
                                         self.flight_phases.add_phase(
                                             overshootable_node.t + parachute.lag,
@@ -1960,15 +2001,9 @@ class Flight:
         wind_velocity_x = self.env.wind_velocity_x.get_value_opt(z)
         wind_velocity_y = self.env.wind_velocity_y.get_value_opt(z)
 
-        # Get Parachute data
-        cd_s = self.parachute_cd_s
-
         # Get the mass of the rocket
         mp = self.rocket.dry_mass
 
-        # Define constants
-        ka = 1  # Added mass coefficient (depends on parachute's porosity)
-        R = 1.5  # Parachute radius
         # to = 1.2
         # eta = 1
         # Rdot = (6 * R * (1 - eta) / (1.2**6)) * (
@@ -1976,8 +2011,17 @@ class Flight:
         # )
         # Rdot = 0
 
+        # tf = 8 * nominal diameter / velocity at line stretch
+
         # Calculate added mass
-        ma = ka * rho * (4 / 3) * np.pi * R**3
+        ma = (
+            self.parachute_added_mass_coefficient
+            * rho
+            * (2 / 3)
+            * np.pi
+            * self.parachute_radius**2
+            * self.parachute_height
+        )
 
         # Calculate freestream speed
         freestream_x = vx - wind_velocity_x
@@ -1986,14 +2030,14 @@ class Flight:
         free_stream_speed = (freestream_x**2 + freestream_y**2 + freestream_z**2) ** 0.5
 
         # Determine drag force
-        pseudo_drag = -0.5 * rho * cd_s * free_stream_speed
+        pseudo_drag = -0.5 * rho * self.parachute_cd_s * free_stream_speed
         # pseudo_drag = pseudo_drag - ka * rho * 4 * np.pi * (R**2) * Rdot
-        Dx = pseudo_drag * freestream_x
+        Dx = pseudo_drag * freestream_x  # add eta efficiency for wake
         Dy = pseudo_drag * freestream_y
         Dz = pseudo_drag * freestream_z
         ax = Dx / (mp + ma)
         ay = Dy / (mp + ma)
-        az = (Dz - 9.8 * mp) / (mp + ma)
+        az = (Dz - mp * self.env.gravity.get_value_opt(z)) / (mp + ma)
 
         # Add coriolis acceleration
         _, w_earth_y, w_earth_z = self.env.earth_rotation_vector
